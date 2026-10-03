@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* ---------- Design tokens ---------- */
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Nirmala UI", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-brand-50: #eefaf3;
+  --color-brand-100: #d6f2e1;
+  --color-brand-200: #ade3c5;
+  --color-brand-300: #78cda2;
+  --color-brand-400: #43b07c;
+  --color-brand-500: #1f9460;
+  --color-brand-600: #12784c;
+  --color-brand-700: #0f6140;
+  --color-brand-800: #0d4d34;
+  --color-brand-900: #0a3c29;
+  --color-ink: #10231a;
+  --color-canvas: #f4f8f5;
+}
+
+html { -webkit-font-smoothing: antialiased; }
+body { background: var(--color-canvas); color: var(--color-ink); }
+
+/* Faint doodle-dot pattern behind the conversation, like the reference design */
+.chat-pattern {
+  background-color: #f8fbf9;
+  background-image:
+    radial-gradient(circle at 20px 20px, rgb(18 120 76 / 0.06) 2px, transparent 2.5px),
+    radial-gradient(circle at 60px 50px, rgb(18 120 76 / 0.04) 3px, transparent 3.5px);
+  background-size: 80px 80px;
+}
+
+/* Soft card elevation used across the app. In the components layer so utilities (bg-gradient-*, bg-*, border-*)
+   on the same element still win — an unlayered rule here would silently override them. */
+@layer components {
+  .card { background-color: #ffffff; border: 1px solid rgb(16 35 26 / 0.07); border-radius: 1rem; box-shadow: 0 1px 2px rgb(16 35 26 / 0.04), 0 8px 24px -12px rgb(16 35 26 / 0.12); }
+}
+
+@keyframes ps-fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: ps-fade-up 260ms ease-out both; }
+@media (prefers-reduced-motion: reduce) { .fade-up { animation: none; } }
+
+
+@keyframes flash {
+  from { background-color: rgb(254 243 199); }
+  to { background-color: transparent; }
+}
+
+/* District map markers (MapLibre HTML markers) */
+.ps-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.ps-marker-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  color: #0b0b0b;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: width 400ms ease, height 400ms ease, background-color 400ms ease;
+}
+.ps-marker:hover .ps-marker-dot,
+.ps-marker:focus-visible .ps-marker-dot {
+  outline: 2px solid #0b0b0b;
+  outline-offset: 1px;
+}
+.ps-marker-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0b0b0b;
+  background: rgb(255 255 255 / 0.85);
+  padding: 0 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.ps-marker-pin {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #0b0b0b;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+/* --- District map: hover effects, popups, detail markers --- */
+.ps-marker .ps-marker-dot {
+  transition: width 400ms ease, height 400ms ease, background-color 400ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.ps-marker:hover .ps-marker-dot,
+.ps-marker.is-hover .ps-marker-dot {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgb(42 120 214 / 0.25), 0 2px 8px rgb(0 0 0 / 0.3);
+}
+.ps-marker.is-hover .ps-marker-label { background: #0b0b0b; color: #ffffff; }
+
+.ps-hq { display: flex; align-items: center; gap: 4px; pointer-events: none; }
+.ps-hq-dot {
+  width: 10px; height: 10px; border-radius: 9999px; background: #0b0b0b; border: 2px solid #ffffff;
+  box-shadow: 0 0 0 0 rgb(11 11 11 / 0.45); animation: ps-pulse 2s ease-out infinite;
+}
+.ps-hq-label {
+  font-size: 11px; font-weight: 700; color: #0b0b0b; background: rgb(255 255 255 / 0.9);
+  padding: 0 4px; border-radius: 3px; white-space: nowrap;
+}
+@keyframes ps-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(11 11 11 / 0.45); }
+  70% { box-shadow: 0 0 0 10px rgb(11 11 11 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(11 11 11 / 0); }
+}
+
+.ps-centre {
+  width: 30px; height: 30px; border-radius: 8px; border: 2px solid #ffffff; background: #ecfdf5;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 0.3); font-size: 16px; line-height: 1; cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.ps-centre:hover, .ps-centre:focus-visible { transform: scale(1.15); box-shadow: 0 0 0 4px rgb(5 150 105 / 0.3), 0 2px 8px rgb(0 0 0 / 0.3); }
+
+.ps-popup .maplibregl-popup-content { padding: 10px 12px; border-radius: 10px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); }
+.ps-pop { font-size: 12px; color: #0b0b0b; min-width: 210px; }
+.ps-pop-title { font-size: 13px; font-weight: 700; }
+.ps-pop-sub { color: #52514e; margin-bottom: 6px; }
+.ps-pop-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.ps-pop-chips span { background: #eef2f7; color: #1c5cab; border-radius: 9999px; padding: 1px 7px; font-size: 10px; font-weight: 600; }
+.ps-pop-row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; border-top: 1px solid #f1f1ef; }
+.ps-pop-row span { color: #52514e; }
+.ps-pop-row b { font-weight: 600; text-align: right; }
+.ps-pop-warn { margin-top: 4px; color: #9a3412; font-weight: 600; }
+.ps-pop-foot { margin-top: 6px; color: #898781; font-size: 10px; }
+
+.ps-live-toast { animation: ps-toast-in 300ms ease-out; }
+@keyframes ps-toast-in { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-hq-dot, .ps-live-toast { animation: none; }
+  .ps-marker .ps-marker-dot, .ps-centre { transition: none; }
+}
+
+/* App reveal after the intro (index.html + src/lib/intro.js). */
+.app-shell { transition: opacity 700ms ease 120ms, transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms; }
+body.intro-active .app-shell { opacity: 0; transform: scale(0.985); animation: ps-app-failsafe 0s linear 12s forwards; }
+@keyframes ps-app-failsafe { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .app-shell { transition: opacity 300ms ease; }
+  body.intro-active .app-shell { transform: none; }
+}

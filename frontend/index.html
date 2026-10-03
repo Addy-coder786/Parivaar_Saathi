@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ParivaarSaathi</title>
+    <link rel="preload" as="image" href="/intro.webp" type="image/webp" />
+    <style>
+      /* Intro: plain HTML/CSS so it shows instantly, before the app bundle loads. src/lib/intro.js dismisses it.
+         Overlay positions are percentages of the 1672×941 artwork, sized in container units (cqw) of the stage. */
+      html, body { background: #fefef6; }
+      #intro {
+        position: fixed; inset: 0; z-index: 100; overflow: hidden;
+        display: flex; align-items: center; justify-content: center;
+        background: #fefef6;
+        transition: opacity 650ms ease, visibility 0s linear 650ms;
+        animation: ps-intro-failsafe 0s linear 12s forwards; /* never block the app if the script does not run */
+      }
+      /* Blurred copy fills the screen around the artwork on non-16:9 screens (phones, ultrawide). */
+      #intro-ambient {
+        position: absolute; inset: -60px;
+        background: url(/intro.webp) center / cover no-repeat;
+        filter: blur(30px) saturate(1.15); opacity: 0.85;
+      }
+      /* Tall screens (phones): a light wash instead of a large blurred blob around the artwork. */
+      @media (max-aspect-ratio: 4/3) {
+        #intro-ambient { opacity: 0.28; }
+        #intro { background: radial-gradient(ellipse at 50% 100%, #d8eedf, #fefef6 60%); }
+      }
+      #intro-stage {
+        position: relative; container-type: inline-size;
+        width: min(100vw, calc(100vh * 1672 / 941)); aspect-ratio: 1672 / 941;
+        opacity: 0;
+      }
+      #intro-drift { position: absolute; inset: 0; }
+      #intro-art { position: absolute; inset: 0; overflow: hidden; }
+      #intro-art img { display: block; width: 100%; height: 100%; }
+      .ps-fx { position: absolute; pointer-events: none; }
+
+      /* --- entrance (starts when the image has loaded: #intro.is-ready) --- */
+      #intro.is-ready #intro-stage { animation: ps-stage-in 1300ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+      #intro.is-ready #intro-art { animation: ps-reveal 1600ms cubic-bezier(0.55, 0.1, 0.25, 1) both; }
+      #intro.is-ready #intro-drift { animation: ps-drift 6s ease-in-out 900ms both; }
+      @keyframes ps-stage-in { from { opacity: 0; transform: scale(1.07); filter: blur(10px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
+      @keyframes ps-reveal { from { clip-path: circle(4% at 50% 22%); } to { clip-path: circle(125% at 50% 22%); } }
+      @keyframes ps-drift { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.035) translate(-0.4%, -0.6%); } }
+
+      /* light sweep across the scene */
+      .ps-sweep { inset: 0; overflow: hidden; }
+      .ps-sweep::before {
+        content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 22%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+        transform: translateX(-160%) skewX(-18deg); opacity: 0;
+      }
+      #intro.is-ready .ps-sweep::before { animation: ps-sweep 1700ms ease-in-out 1300ms forwards; }
+      @keyframes ps-sweep { 0% { transform: translateX(-160%) skewX(-18deg); opacity: 1; } 100% { transform: translateX(560%) skewX(-18deg); opacity: 1; } }
+
+      /* glow behind the star above the logo, and the sun (top right) */
+      .ps-star-glow { left: 50%; top: 11.4%; width: 11cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+        background: radial-gradient(circle, rgba(254, 182, 20, 0.5), rgba(254, 182, 20, 0) 62%); mix-blend-mode: multiply; opacity: 0; }
+      .ps-sun-glow { left: 96%; top: 7%; width: 30cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 220, 110, 0.55), rgba(255, 220, 110, 0) 65%); opacity: 0; }
+      #intro.is-ready .ps-star-glow { animation: ps-pulse 2.2s ease-in-out 700ms infinite; }
+      #intro.is-ready .ps-sun-glow { animation: ps-pulse 3.2s ease-in-out 1000ms infinite; }
+      @keyframes ps-pulse { 0%, 100% { opacity: 0.25; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.08); } }
+
+      /* rising sparkles */
+      .ps-spark { width: 0.55cqw; aspect-ratio: 1; border-radius: 50%; background: #feb614; box-shadow: 0 0 1cqw rgba(254, 182, 20, 0.8); opacity: 0; }
+      .ps-spark.w { background: #fff; box-shadow: 0 0 1cqw rgba(255, 255, 255, 0.95); }
+      #intro.is-ready .ps-spark { animation: ps-rise var(--d, 3.2s) ease-in-out var(--t, 0s) infinite; }
+      @keyframes ps-rise { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-9cqw) scale(1.1); } }
+
+      /* real spinner over the drawn one (ring centre 50% / 71.94%, diameter 3.65% of width) */
+      .ps-ring-cover { left: 50%; top: 71.94%; width: 4.5cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: #fefef6; }
+      .ps-ring { left: 50%; top: 71.94%; width: 3.6cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; box-sizing: border-box;
+        border: 0.36cqw solid rgba(13, 122, 85, 0.16); border-top-color: #0e7a56; border-right-color: #3aa07a;
+        opacity: 0; animation: ps-spin 900ms linear infinite; }
+      @keyframes ps-spin { to { rotate: 360deg; } }
+      /* spinner + progress appear once the circular reveal has reached them */
+      .ps-ring-cover, .ps-progress { opacity: 0; }
+      #intro.is-ready .ps-ring-cover, #intro.is-ready .ps-progress { animation: ps-appear 300ms ease 1000ms forwards; }
+      #intro.is-ready .ps-ring { animation: ps-spin 900ms linear infinite, ps-appear 300ms ease 1000ms forwards; }
+      @keyframes ps-appear { to { opacity: 1; } }
+
+      /* progress bar under "This may take a few seconds" */
+      .ps-progress { left: 50%; top: 87%; width: 14cqw; height: 0.3cqw; translate: -50% 0; border-radius: 99px; background: rgba(13, 122, 85, 0.14); overflow: hidden; }
+      .ps-progress::after { content: ""; position: absolute; inset: 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #0e7a56, #f2b632); }
+      #intro.is-ready .ps-progress::after { animation: ps-fill var(--intro-ms, 3000ms) cubic-bezier(0.3, 0.1, 0.3, 1) 1000ms forwards; }
+      @keyframes ps-fill { to { width: 100%; } }
+
+      #intro-skip {
+        position: absolute; right: 20px; bottom: 20px; z-index: 2;
+        font: 600 13px/1 system-ui, sans-serif; color: #0e5e43;
+        background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(14, 94, 67, 0.25);
+        border-radius: 999px; padding: 9px 16px; cursor: pointer; backdrop-filter: blur(4px);
+      }
+      #intro-skip:hover { background: #fff; }
+      #intro-skip:focus-visible { outline: 3px solid #1f9460; outline-offset: 2px; }
+
+      /* --- exit: zoom through, then the app appears --- */
+      #intro.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+      #intro.is-leaving #intro-stage { animation: ps-stage-out 650ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+      @keyframes ps-stage-out { from { opacity: 1; transform: scale(1); filter: blur(0); } to { opacity: 0; transform: scale(1.1); filter: blur(4px); } }
+      @keyframes ps-intro-failsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+
+      @media (prefers-reduced-motion: reduce) {
+        #intro.is-ready #intro-stage { animation: ps-fade-only 300ms ease forwards; }
+        #intro.is-ready #intro-art, #intro.is-ready #intro-drift, #intro.is-ready .ps-sweep::before,
+        #intro.is-ready .ps-spark, #intro.is-ready .ps-star-glow, #intro.is-ready .ps-sun-glow { animation: none; }
+        .ps-ring { animation-duration: 2.4s; }
+        #intro.is-leaving #intro-stage { animation: ps-fade-out 300ms ease forwards; }
+        @keyframes ps-fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes ps-fade-only { to { opacity: 1; } }
+      }
+    </style>
+  </head>
+  <body class="intro-active">
+    <div id="intro" role="status" aria-label="Loading ParivaarSaathi">
+      <div id="intro-ambient" aria-hidden="true"></div>
+      <div id="intro-stage">
+        <div id="intro-drift">
+          <div id="intro-art">
+            <picture>
+              <source srcset="/intro.webp" type="image/webp" />
+              <img id="intro-img" src="/intro.jpg" width="1672" height="941"
+                alt="ParivaarSaathi — Better career decisions start together. Preparing your session."
+                onload="window.__introLoadedAt = performance.now(); document.getElementById('intro')?.classList.add('is-ready')"
+                onerror="window.__introFailed = true" />
+            </picture>
+            <div class="ps-fx ps-sweep" aria-hidden="true"></div>
+          </div>
+          <div class="ps-fx ps-sun-glow" aria-hidden="true"></div>
+          <div class="ps-fx ps-star-glow" aria-hidden="true"></div>
+          <span class="ps-fx ps-spark" style="left:41%;top:30%;--d:3.4s;--t:0.6s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark w" style="left:46%;top:24%;--d:2.9s;--t:1.1s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark" style="left:55%;top:27%;--d:3.1s;--t:0.9s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark w" style="left:59%;top:33%;--d:3.6s;--t:1.6s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark" style="left:36%;top:46%;--d:3.8s;--t:1.3s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark w" style="left:64%;top:44%;--d:3.3s;--t:0.4s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark" style="left:22%;top:38%;--d:4.2s;--t:1.9s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark w" style="left:80%;top:30%;--d:3.9s;--t:0.8s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark" style="left:72%;top:62%;--d:3.5s;--t:2.2s" aria-hidden="true"></span>
+          <span class="ps-fx ps-spark w" style="left:28%;top:64%;--d:3.7s;--t:1.5s" aria-hidden="true"></span>
+          <div class="ps-fx ps-ring-cover" aria-hidden="true"></div>
+          <div class="ps-fx ps-ring" aria-hidden="true"></div>
+          <div class="ps-fx ps-progress" aria-hidden="true"></div>
+        </div>
+      </div>
+      <button id="intro-skip" type="button">Skip intro</button>
+    </div>
+    <script>
+      // ?intro=0 (rehearsals, automated tests) and the parent's WhatsApp invite link open straight into the app.
+      if (/[?&]intro=0\b/.test(location.search) || /[?&]join=/.test(location.hash)) {
+        document.getElementById('intro').remove()
+        document.body.classList.remove('intro-active')
+      }
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
