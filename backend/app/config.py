@@ -47,6 +47,9 @@ APP_MODE = os.getenv("APP_MODE", "auto").lower()  # auto | demo
 
 DATABASE_PATH = Path(os.getenv("DATABASE_PATH", BACKEND_DIR / "parivaarsaathi.db"))
 
+# Built frontend served by FastAPI in production (single-service deploy). Absent in development.
+FRONTEND_DIST = Path(os.getenv("FRONTEND_DIST", BACKEND_DIR.parent / "frontend" / "dist"))
+
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 
 # ---------------------------------------------------------------------------

@@ -7,6 +7,7 @@ from urllib.parse import parse_qsl
 
 from fastapi import FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app import config
 from app.db import check_db, connect, init_db
@@ -32,7 +33,26 @@ async def lifespan(app: FastAPI):
     yield
 
 
+class SameOriginPaths:
+    """Accepts the browser's /api/* and /ws/* paths directly (what the Vite dev proxy rewrites in development),
+    so one deployed service can serve the built frontend and the API from the same origin."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] in ("http", "websocket"):
+            path = scope["path"]
+            for prefix in ("/api", "/ws"):
+                if path == prefix or path.startswith(prefix + "/"):
+                    new = path[len(prefix):] or "/"
+                    scope = {**scope, "path": new, "raw_path": new.encode()}
+                    break
+        await self.app(scope, receive, send)
+
+
 app = FastAPI(title="ParivaarSaathi API", lifespan=lifespan)
+app.add_middleware(SameOriginPaths)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
@@ -326,3 +346,9 @@ async def events(ws: WebSocket):
             await ws.receive_text()  # keep-alive; clients don't need to send anything
     except WebSocketDisconnect:
         hub.disconnect(ws)
+
+
+# Production: serve the built React app (frontend/dist) from the same origin. Registered last, so every API route
+# above takes precedence. In development Vite serves the frontend and this folder usually does not exist.
+if config.FRONTEND_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=config.FRONTEND_DIST, html=True), name="frontend")

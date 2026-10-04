@@ -1,0 +1,21 @@
+# Render Blueprint — free web service built from the Dockerfile.
+# Deploy: Render dashboard → New → Blueprint → pick this repository. Secrets are entered in the dashboard, never here.
+services:
+  - type: web
+    name: parivaarsaathi
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false          # Render asks for the value on first deploy; leave empty for Demo mode
+      - key: APP_MODE
+        value: auto
+      - key: LLM_TIMEOUT
+        value: "20"
+      - key: CHANNEL_HASH_SALT
+        generateValue: true  # random secret, used to hash WhatsApp numbers

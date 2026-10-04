@@ -1,0 +1,13 @@
+# Never ship secrets or local state into the image
+**/.env
+**/.env.*
+!**/.env.example
+**/*.db
+**/.venv
+**/__pycache__
+**/node_modules
+frontend/dist
+.git
+.claude
+docs
+*.log

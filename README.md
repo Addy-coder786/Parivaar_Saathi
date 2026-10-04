@@ -55,6 +55,8 @@ Parivaar_Saathi/
 │   └── src/                 components/, pages/, lib/
 ├── docs/                    master context, implementation plan, demo script, claims, screenshots/
 ├── scripts/start-dev.ps1    opens backend + frontend in two terminals (Windows)
+├── Dockerfile               one container: builds the frontend, serves it + the API (free deploy)
+├── render.yaml              Render Blueprint (free web service)
 └── README.md
 ```
 
@@ -133,6 +135,14 @@ the scripted demo never calls the LLM.
 Other providers: `LLM_PROVIDER=anthropic` with `ANTHROPIC_API_KEY` (default `claude-opus-5-5`), or
 `LLM_PROVIDER=openai_compatible` with `LLM_BASE_URL` for any OpenAI-style endpoint such as a local Ollama
 (`http://127.0.0.1:11434/v1`, no key). All three go through the same `llm_service.py`; nothing else changes.
+
+---
+
+## Deploy for free
+
+One free Render web service runs the whole app (API, WebSocket and frontend on one URL). In Render, choose
+**New → Blueprint**, pick this repository and enter your `GROQ_API_KEY` (or leave it empty for Demo mode). The included
+`Dockerfile` and `render.yaml` do the rest. Full steps and free-plan caveats: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ---
 
@@ -247,4 +257,5 @@ backend/ (FastAPI + SQLite, Python)
 - `docs/ParivaarSaathi_Understanding.md` — pre-build understanding and open questions
 - `docs/IMPLEMENTATION_PLAN.md` — the 3-phase plan and the decisions taken on the open questions
 - `docs/DEMO_SCRIPT.md` — demo flow and talking points for judges
+- `docs/DEPLOYMENT.md`: free deployment on Render (Dockerfile + render.yaml)
 - `docs/CLAIMS_AND_INTEGRATIONS.md` — every solution claim mapped to Working / Simulated / Adapter ready / Not built, with safe wording
